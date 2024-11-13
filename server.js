@@ -4,9 +4,10 @@ const morgan = require("morgan");
 
 dotenv.config({ path : 'config.env'});
 const ApiError = require("./utils/apiError");
+const globalError = require("./middleWares/errorMiddleware");
 const dbConnection =require("./config/database")
 
-const categoryRoute = require('./Routes/categoryRoutes')
+const categoryRoute = require('./Routes/categoryRoutes');
 
 
 dbConnection()
@@ -32,18 +33,21 @@ app.all('*', (req,res,next)=>{
    next(new ApiError(`Can't find this route ${req.originalUrl}`, 400));
 })
 
-//middleware to handle errors and return them in json 
-app.use((err, req, res, next)=>{
-    err.statusCode = err.statusCode || 500;
-    err.status = err.status || 'error';
-    res.status(err.statusCode).json({
-        status: err.status,
-        error: err,
-        message: err.message,
-        stack: err.stack,
-    })
-})
+//middleware to handle errors and return them in json in express only
+app.use(globalError);
+
 const PORT = process.env.PORT || 8000;
-app.listen(PORT, ()=>{
+const server = app.listen(PORT, ()=>{
     console.log(`App runing on port ${PORT}`);
+})
+
+//when i have error not coming from express i want to catch it globaly
+//Events (lama y7sal rejection aw error fy event by7sal 3ando emit fa ba3ml listen 3ala elevent dah w ba3mel callback function 3ashan yrga3ly elerror )
+//handle rejections outside the express
+process.on('unhandeledRejection', (err)=>{
+        console.error(`UnhandledRejection  Errorrr: ${err.name} | ${err.message}`);
+        server.close(()=>{ //ba2olo e3mel shut down lama t5las elreq ely gaya 3ala elserver
+           console.log("Shutting down ...... bye!!!")
+            process.exit(1); //shut down app
+        });
 })

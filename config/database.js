@@ -6,10 +6,7 @@ const dbConnection = () =>{
         console.log(`Database connected: ${conn.connection.host}`)
     
     })
-    .catch((err)=>{
-        console.error(`database Errorrr: ${err}`);
-        process.exit(1)
-    })
+  
 }
 
 module.exports = dbConnection;
