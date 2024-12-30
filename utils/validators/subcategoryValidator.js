@@ -25,11 +25,11 @@ exports.getSubcatVali = [
 ];
 
 exports.updateSubcategoryVali = [
-    check('id').isMongoId().withMessage('Invalid Id'),
-    validatorMiddleware,
+  check("id").isMongoId().withMessage("Invalid Id"),
+  validatorMiddleware,
 ];
 
 exports.deleteSubcategoryVali = [
-    check('id').isMongoId().withMessage('Invalid Id'),
-    validatorMiddleware,
+  check("id").isMongoId().withMessage("Invalid Id"),
+  validatorMiddleware,
 ];
