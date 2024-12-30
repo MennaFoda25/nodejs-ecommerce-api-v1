@@ -5,9 +5,7 @@ const {
   getAllSubcat,
   getSubcat,
   updateSubcat,
-  setCategoryIdToBody,
   deleteSubcat,
-  createFilterObj
 } = require("../controllers/subcategoryServices");
 
 const {
@@ -15,17 +13,12 @@ const {
   getSubcatVali,
   updateSubcategoryVali,
   deleteSubcategoryVali,
-  
 } = require("../utils/validators/subcategoryValidator");
 
-//mergeParams: allows us to access parameters in other routers
-//ex: we need to access catId from cat router
-const router = express.Router({ mergeParams: true });
 
-router
-  .route("/")
-  .post(setCategoryIdToBody, createSubcatVali, createSubCategory)
-  .get(createFilterObj,getAllSubcat);
+const router = express.Router({mergeParams: true});
+
+router.route("/").post(createSubcatVali, createSubCategory).get(getAllSubcat);
 
 router
   .route("/:id")

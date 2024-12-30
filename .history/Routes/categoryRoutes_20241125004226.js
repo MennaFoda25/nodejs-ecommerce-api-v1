@@ -17,7 +17,7 @@ const subcategoryRoute = require("./subcategoryRoute");
 
 const router = express.Router();
 
-router.use("/:categoryId/subcategories", subcategoryRoute); //law galk route zay dah ro7 3ala subcat
+router.use("/:categoryId/subcategories", subcategoryRoute); //law galk 
 
 router
   .route("/")
