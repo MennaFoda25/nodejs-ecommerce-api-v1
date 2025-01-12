@@ -2,19 +2,27 @@ const slugify = require("slugify");
 const asyncHandler = require("express-async-handler");
 const CategoryModel = require("../Models/categoryModel");
 const ApiError = require("../utils/apiError");
+const ApiFeatures = require("../utils/apiFeatures");
+const factory = require("../controllers/handlerFactory");
 
 //get list of categories
 //route GET /api/v1/categories
 //access Public
 exports.getCategories = asyncHandler(async (req, res) => {
-  const page = req.query.page * 1 || 1;
-  const limit = req.query.limit || 5;
-  const skip = (page - 1) * limit;
-  const categories = await CategoryModel.find({}).skip(skip).limit(limit);
+  const documentCounts = await CategoryModel.countDocuments();
+  const apiFeatures = new ApiFeatures(CategoryModel.find(), req.query)
+    .paginate(documentCounts)
+    .filter()
+    .limitFields()
+    .search()
+    .sort();
+
+  const { mongooseQuery, paginationResult } = apiFeatures;
+  const categories = await mongooseQuery;
 
   res
     .status(200)
-    .json({ results: categories.length, page: page, data: categories });
+    .json({ results: categories.length, paginationResult, data: categories });
 });
 
 //Get specific category
@@ -43,29 +51,5 @@ exports.createCategory = asyncHandler(async (req, res) => {
 //route PUT /api/v1/categories/:id
 //access private
 
-exports.updateCategory = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const { name } = req.body;
-  const category = await CategoryModel.findOneAndUpdate(
-    { _id: id },
-    { name, slug: slugify(name) },
-    { new: true }
-  );
-  if (!category) {
-    return next(new ApiError(`No category for this id  ${id}`, 404));
-    //  res.status(404).json({msg :`No category for this id  ${id}`})
-  }
-  res.status(200).json({ data: category });
-});
-
-exports.deleteCategory = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const category = await CategoryModel.findByIdAndDelete(id);
-
-  if (!category) {
-    return next(new ApiError(`No category for this id  ${id}`, 404));
-
-    // res.status(404).json({msg:`No category found `})
-  }
-  res.status(204).send();
-});
+exports.updateCategory = factory.updateOne(CategoryModel);
+exports.deleteCategory = factory.deleteOne(CategoryModel);

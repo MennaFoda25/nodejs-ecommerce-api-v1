@@ -2,17 +2,27 @@ const slugify = require("slugify");
 const asyncHandler = require("express-async-handler");
 const BrandModel = require("../Models/brandModel");
 const ApiError = require("../utils/apiError");
-
+const ApiFeatures = require("../utils/apiFeatures");
+const factory = require("../controllers/handlerFactory");
 //get list of brands
 //route GET /api/v1/brands
 //access Public
 exports.getBrands = asyncHandler(async (req, res) => {
-  const page = req.query.page * 1 || 1;
-  const limit = req.query.limit || 5;
-  const skip = (page - 1) * limit;
-  const brands = await BrandModel.find({}).skip(skip).limit(limit);
+  //build query
+  const documentCounts = await BrandModel.countDocuments();
+  const apiFeatures = new ApiFeatures(BrandModel.find(), req.query)
+    .paginate(documentCounts)
+    .filter()
+    .limitFields()
+    .search()
+    .sort();
 
-  res.status(200).json({ results: brands.length, page: page, data: brands });
+  const { mongooseQuery, paginationResult } = apiFeatures;
+  const brands = await mongooseQuery;
+
+  res
+    .status(200)
+    .json({ results: brands.length, paginationResult, data: brands });
 });
 
 //Get specific brand
@@ -31,39 +41,12 @@ exports.getBrand = asyncHandler(async (req, res, next) => {
 // create brand
 //route  POST  /api/v1/categories
 // access private
-exports.createBrand = asyncHandler(async (req, res) => {
-  const { name } = req.body;
-  const brand = await BrandModel.create({ name, slug: slugify(name) });
-  res.status(201).json({ data: brand });
-});
+exports.createBrand = factory.updateOne(BrandModel);
 
 // Update spacific brand
 //route PUT /api/v1/brands/:id
 //access private
 
-exports.updateBrand = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const { name } = req.body;
-  const brand = await BrandModel.findOneAndUpdate(
-    { _id: id },
-    { name, slug: slugify(name) },
-    { new: true }
-  );
-  if (!brand) {
-    return next(new ApiError(`No brand for this id  ${id}`, 404));
-    //  res.status(404).json({msg :`No brand for this id  ${id}`})
-  }
-  res.status(200).json({ data: brand });
-});
+exports.updateBrand = factory.updateOne(BrandModel);
 
-exports.deleteBrand = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const brand = await BrandModel.findByIdAndDelete(id);
-
-  if (!brand) {
-    return next(new ApiError(`No brand for this id  ${id}`, 404));
-
-    // res.status(404).json({msg:`No brand found `})
-  }
-  res.status(204).send();
-});
+exports.deleteBrand = factory.deleteOne(BrandModel);
