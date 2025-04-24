@@ -1,45 +1,65 @@
-const slugify = require("slugify");
-const asyncHandler = require("express-async-handler");
 const productModel = require("../Models/productsModel");
-const ApiError = require("../utils/apiError");
-const ApiFeatures = require("../utils/apiFeatures");
 const factory = require("../controllers/handlerFactory");
+const sharp = require("sharp");
+const { v4: uuidv4 } = require("uuid");
+const { uploadMixofImages } = require("../middleWares/uploadImageMiddleware");
+const asyncHandler = require("express-async-handler");
 
+exports.uploadImages = uploadMixofImages([
+  {
+    name: "imageCover",
+    maxCount: 1,
+  },
+  {
+    name: "images",
+    maxCount: 5,
+  },
+]);
+
+exports.resizeProductImages = asyncHandler(async (req, res, next) => {
+  //console.log(req.files);
+  //Image processing for image cover
+  if (req.files.imageCover) {
+    const imageCoverFileName = `product-${uuidv4()}-${Date.now()}-cover.jpeg`;
+    await sharp(req.files.imageCover[0].buffer)
+      .resize(2000, 1333)
+      .toFormat("jpeg")
+      .jpeg({ quality: 95 })
+      .toFile(`uploads/products/${imageCoverFileName}`);
+
+    //save image into our db
+    req.body.imageCover = imageCoverFileName;
+  }
+
+  //2-image processing for images
+  if (req.files.images) {
+    req.body.images = [];
+    await Promise.all(
+      req.files.images.map(async (img, index) => {
+        const imageName = `product-${uuidv4()}-${Date.now()}-${index + 1}.jpeg`;
+        await sharp(img.buffer)
+          .resize(2000, 1333)
+          .toFormat("jpeg")
+          .jpeg({ quality: 95 })
+          .toFile(`uploads/products/${imageName}`);
+
+        //save image into our db
+        req.body.images.push(imageName);
+      })
+    );
+    console.log(req.body.imageCover);
+    console.log(req.body.images);
+  }
+  next();
+});
 //get list of products
 //route GET /api/v1/products
 //access Public
-exports.getProducts = asyncHandler(async (req, res) => {
-  //build query
-  const documentCounts = await productModel.countDocuments();
-  const apiFeatures = new ApiFeatures(productModel.find(), req.query)
-    .paginate(documentCounts)
-    .filter()
-    .limitFields()
-    .search("Products")
-    .sort();
-
-  const { mongooseQuery, paginationResult } = apiFeatures;
-  const products = await mongooseQuery;
-  res
-    .status(200)
-    .json({ results: products.length, paginationResult, data: products });
-});
-
+exports.getProducts = factory.getAll(productModel, "Products");
 //Get specific product
 //route  GET /api/v1/product/id
 //access public
-exports.getProduct = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const product = await productModel
-    .findById(id)
-    .populate({ path: "category", select: "name -_id" });
-  if (!product) {
-    return next(new ApiError(`No product for this id  ${id}`, 404));
-    // res.status(404).json({msg :`No category for this id  ${id}`})
-  }
-  res.status(200).json({ data: product });
-});
-
+exports.getProduct = factory.getOne(productModel);
 // create product
 //route  POST  /api/v1/product
 // access private

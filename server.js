@@ -1,7 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const morgan = require("morgan");
-
+const path = require("path");
 dotenv.config({ path: "config.env" });
 const ApiError = require("./utils/apiError");
 const globalError = require("./middleWares/errorMiddleware");
@@ -11,6 +11,7 @@ const categoryRoute = require("./Routes/categoryRoutes");
 const subcategoryRoute = require("./Routes/subcategoryRoute");
 const brandRoute = require("./Routes/brandsRoutes");
 const productRoutes = require("./Routes/productRoutes");
+const userRoutes = require("./Routes/userRoutes");
 
 dbConnection();
 // express app
@@ -18,17 +19,19 @@ const app = express();
 
 //Middlewares
 app.use(express.json()); //parsing leljson file  l javasript object
+app.use(express.static(path.join(__dirname, "uploads")));
+
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
   console.log(`mode: ${process.env.NODE_ENV}`);
 }
 
 //Mount Routes
-
 app.use("/api/v1/categories", categoryRoute);
 app.use("/api/v1/subcategories", subcategoryRoute);
 app.use("/api/v1/brands", brandRoute);
 app.use("/api/v1/products", productRoutes);
+app.use("/api/v1/users", userRoutes);
 
 app.all("*", (req, res, next) => {
   // const err = new Error(`Can't find this route ${req.originalUrl}`)

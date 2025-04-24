@@ -1,47 +1,42 @@
-const slugify = require("slugify");
+const { uploadSingleImage } = require("../middleWares/uploadImageMiddleware");
+const sharp = require("sharp");
+const factory = require("../controllers/handlerFactory");
+const { v4: uuidv4 } = require("uuid");
 const asyncHandler = require("express-async-handler");
 const BrandModel = require("../Models/brandModel");
-const ApiError = require("../utils/apiError");
-const ApiFeatures = require("../utils/apiFeatures");
-const factory = require("../controllers/handlerFactory");
+
+//upload single image
+exports.uploadBrandImage = uploadSingleImage("image");
+
+//image processing
+exports.resizeImage = asyncHandler(async (req, res, next) => {
+  const filename = `brand-${uuidv4()}-${Date.now()}.jpeg`;
+  await sharp(req.file.buffer)
+    .resize(600, 600)
+    .toFormat("jpeg")
+    .jpeg({ quality: 90 })
+    .toFile(`uploads/brands/${filename}`);
+
+  //save image into our db
+  req.body.image = filename;
+
+  next();
+});
+
 //get list of brands
 //route GET /api/v1/brands
 //access Public
-exports.getBrands = asyncHandler(async (req, res) => {
-  //build query
-  const documentCounts = await BrandModel.countDocuments();
-  const apiFeatures = new ApiFeatures(BrandModel.find(), req.query)
-    .paginate(documentCounts)
-    .filter()
-    .limitFields()
-    .search()
-    .sort();
-
-  const { mongooseQuery, paginationResult } = apiFeatures;
-  const brands = await mongooseQuery;
-
-  res
-    .status(200)
-    .json({ results: brands.length, paginationResult, data: brands });
-});
+exports.getBrands = factory.getAll(BrandModel);
 
 //Get specific brand
 //route  GET /api/v1/brands/id
 //access public
-exports.getBrand = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const brand = await BrandModel.findById(id);
-  if (!brand) {
-    return next(new ApiError(`No brand for this id  ${id}`, 404));
-    // res.status(404).json({msg :`No brand for this id  ${id}`})
-  }
-  res.status(200).json({ data: brand });
-});
+exports.getBrand = factory.getOne(BrandModel);
 
 // create brand
 //route  POST  /api/v1/categories
 // access private
-exports.createBrand = factory.updateOne(BrandModel);
+exports.createBrand = factory.createOne(BrandModel);
 
 // Update spacific brand
 //route PUT /api/v1/brands/:id
