@@ -1,20 +1,23 @@
-const userModel = require("../Models/userModel");
-const factory = require("../controllers/handlerFactory");
-const sharp = require("sharp");
-const { v4: uuidv4 } = require("uuid");
-const {  uploadSingleImage } = require("../middleWares/uploadImageMiddleware");
-const asyncHandler = require("express-async-handler");
-const ApiError = require("../utils/apiError");
-const res = require("express/lib/response");
 const bcrypt = require("bcryptjs");
 
-//upload single image
-exports.uploadUserImage = uploadSingleImage("profileImg")
+const { v4: uuidv4 } = require("uuid");
+const res = require("express/lib/response");
+const sharp = require("sharp");
+const asyncHandler = require("express-async-handler");
+const factory = require("./handlerFactory");
 
+const { uploadSingleImage } = require("../middleWares/uploadImageMiddleware");
+
+const ApiError = require("../utils/apiError");
+
+const userModel = require("../Models/userModel");
+
+//upload single image
+exports.uploadUserImage = uploadSingleImage("profileImg");
 
 //Image processing
 exports.resizeImage = asyncHandler(async (req, res, next) => {
-    const filename = `user-${uuidv4()}-${Date.now()}.jpeg`;
+  const filename = `user-${uuidv4()}-${Date.now()}.jpeg`;
   //Image processing for image cover
   if (req.file) {
     await sharp(req.file.buffer)
@@ -22,10 +25,10 @@ exports.resizeImage = asyncHandler(async (req, res, next) => {
       .toFormat("jpeg")
       .jpeg({ quality: 95 })
       .toFile(`uploads/users/${filename}`);
-  
-  //2- save image in DB
- req.body.profileImg = filename;
-}
+
+    //2- save image in DB
+    req.body.profileImg = filename;
+  }
   next();
 });
 //get list of Users
@@ -46,41 +49,45 @@ exports.createUser = factory.createOne(userModel);
 //access private
 
 exports.updateUser = asyncHandler(async (req, res, next) => {
-    const document = await userModel.findByIdAndUpdate(req.params.id,  {
-        name : req.body.name,
-        slug : req.body.slug,
-        phone: req.body.phone,
-        email: req.body.email,
-        profileImg: req.body.profileImg,
-        role: req.body.role,
+  const document = await userModel.findByIdAndUpdate(
+    req.params.id,
+    {
+      name: req.body.name,
+      slug: req.body.slug,
+      phone: req.body.phone,
+      email: req.body.email,
+      profileImg: req.body.profileImg,
+      role: req.body.role,
     },
     {
-        new:true,
+      new: true,
     }
-);
-    if (!document) {
-      return next(
-        new ApiError(`No ${document} for this id  ${req.params.id}`, 404)
-      );
-    }
-    res.status(200).json({ data: document });
-  });
+  );
+  if (!document) {
+    return next(
+      new ApiError(`No ${document} for this id  ${req.params.id}`, 404)
+    );
+  }
+  res.status(200).json({ data: document });
+});
 
-
-exports.changeUserPassword =    asyncHandler(async (req, res, next) => {
-    const document = await userModel.findByIdAndUpdate(req.params.id,  {
-        password : await bcrypt.hash(req.body.password, 12),
+exports.changeUserPassword = asyncHandler(async (req, res, next) => {
+  const document = await userModel.findByIdAndUpdate(
+    req.params.id,
+    {
+      password: await bcrypt.hash(req.body.password, 12),
+      passwordChangedAt: Date.now(),
     },
     {
-        new:true,
+      new: true,
     }
-);
-    if (!document) {
-      return next(
-        new ApiError(`No ${document} for this id  ${req.params.id}`, 404)
-      );
-    }
-    res.status(200).json({ data: document });
-  });
+  );
+  if (!document) {
+    return next(
+      new ApiError(`No ${document} for this id  ${req.params.id}`, 404)
+    );
+  }
+  res.status(200).json({ data: document });
+});
 
 exports.deleteUser = factory.deleteOne(userModel);

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -23,6 +24,7 @@ const userSchema = new mongoose.Schema(
       required: [true, "Please provide your password"],
       minLength: [6, "Password must be at least 6 characters"],
     },
+    passwordChangedAt: Date,
     role: {
       type: String,
       enum: ["user", "admin"],

@@ -12,6 +12,7 @@ const subcategoryRoute = require("./Routes/subcategoryRoute");
 const brandRoute = require("./Routes/brandsRoutes");
 const productRoutes = require("./Routes/productRoutes");
 const userRoutes = require("./Routes/userRoutes");
+const authRoute = require("./Routes/authRoute");
 
 dbConnection();
 // express app
@@ -32,6 +33,7 @@ app.use("/api/v1/subcategories", subcategoryRoute);
 app.use("/api/v1/brands", brandRoute);
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/auth", authRoute);
 
 app.all("*", (req, res, next) => {
   // const err = new Error(`Can't find this route ${req.originalUrl}`)
